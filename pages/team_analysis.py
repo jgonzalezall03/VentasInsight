@@ -131,7 +131,7 @@ def render_team_analysis(df, data_processor):
             
             # Create month-year column
             filtered_df_copy = filtered_df.copy()
-            filtered_df_copy['month_year'] = filtered_df_copy[data_processor.date_column].dt.to_period('M')
+            filtered_df_copy['month_year'] = filtered_df_copy[data_processor.date_column].dt.to_period('M').astype(str)
             
             # Aggregate by month and salesperson
             monthly_team = filtered_df_copy.groupby(['month_year', data_processor.salesperson_column])[

@@ -128,7 +128,7 @@ def render_individual_analysis(df, data_processor):
         
         # Monthly performance table
         monthly_performance = filtered_data.groupby(
-            filtered_data[data_processor.date_column].dt.to_period('M')
+            filtered_data[data_processor.date_column].dt.to_period('M').astype(str)
         )[data_processor.amount_column].agg(['sum', 'count', 'mean']).reset_index()
         
         monthly_performance.columns = ['Mes', 'Ventas Totales', 'Transacciones', 'Venta Promedio']
@@ -235,7 +235,7 @@ def render_individual_analysis(df, data_processor):
         
         # Calculate growth rate
         monthly_data = filtered_data.groupby(
-            filtered_data[data_processor.date_column].dt.to_period('M')
+            filtered_data[data_processor.date_column].dt.to_period('M').astype(str)
         )[data_processor.amount_column].sum()
         
         if len(monthly_data) >= 2:
