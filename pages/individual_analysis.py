@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
 from utils.visualizations import create_salesperson_detail_chart, create_product_performance_chart
 
 def render_individual_analysis(df, data_processor):
@@ -39,15 +40,25 @@ def render_individual_analysis(df, data_processor):
     # Date filter
     col1, col2 = st.columns(2)
     with col1:
+        try:
+            min_date = salesperson_data[data_processor.date_column].min().date() if data_processor.date_column and not salesperson_data.empty else (datetime.now() - timedelta(days=365)).date()
+        except:
+            min_date = (datetime.now() - timedelta(days=365)).date()
+            
         start_date = st.date_input(
             "Fecha Inicio",
-            value=salesperson_data[data_processor.date_column].min() if data_processor.date_column else None,
+            value=min_date,
             key="individual_start_date"
         )
     with col2:
+        try:
+            max_date = salesperson_data[data_processor.date_column].max().date() if data_processor.date_column and not salesperson_data.empty else datetime.now().date()
+        except:
+            max_date = datetime.now().date()
+            
         end_date = st.date_input(
             "Fecha Fin",
-            value=salesperson_data[data_processor.date_column].max() if data_processor.date_column else None,
+            value=max_date,
             key="individual_end_date"
         )
     

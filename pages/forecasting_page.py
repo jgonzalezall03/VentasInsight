@@ -28,18 +28,25 @@ def render_forecasting_page(df, data_processor):
     min_date = df[data_processor.date_column].min()
     max_date = df[data_processor.date_column].max()
     
+    try:
+        min_date_val = min_date.date() if hasattr(min_date, 'date') else min_date
+        max_date_val = max_date.date() if hasattr(max_date, 'date') else max_date
+    except:
+        min_date_val = (datetime.now() - timedelta(days=365)).date()
+        max_date_val = datetime.now().date()
+    
     start_date = st.sidebar.date_input(
         "Fecha Inicio Histórica",
-        value=min_date,
-        min_value=min_date,
-        max_value=max_date
+        value=min_date_val,
+        min_value=min_date_val,
+        max_value=max_date_val
     )
     
     end_date = st.sidebar.date_input(
         "Fecha Fin Histórica",
-        value=max_date,
-        min_value=min_date,
-        max_value=max_date
+        value=max_date_val,
+        min_value=min_date_val,
+        max_value=max_date_val
     )
     
     # Forecast parameters

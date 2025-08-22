@@ -122,14 +122,24 @@ def show_general_dashboard():
     # Date filter
     col1, col2 = st.columns(2)
     with col1:
+        try:
+            min_date = df[processor.date_column].min().date() if processor.date_column and not df.empty else (datetime.now() - timedelta(days=365)).date()
+        except:
+            min_date = (datetime.now() - timedelta(days=365)).date()
+        
         start_date = st.date_input(
             "Fecha Inicio",
-            value=df[processor.date_column].min() if processor.date_column else datetime.now() - timedelta(days=365)
+            value=min_date
         )
     with col2:
+        try:
+            max_date = df[processor.date_column].max().date() if processor.date_column and not df.empty else datetime.now().date()
+        except:
+            max_date = datetime.now().date()
+            
         end_date = st.date_input(
             "Fecha Fin",
-            value=df[processor.date_column].max() if processor.date_column else datetime.now()
+            value=max_date
         )
     
     # Filter data

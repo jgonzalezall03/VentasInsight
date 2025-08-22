@@ -37,11 +37,11 @@ class DataProcessor:
         """Automatically detect column types based on common patterns"""
         columns = df.columns.str.lower()
         
-        # Date column patterns
-        date_patterns = ['fecha', 'date', 'tiempo', 'time', 'periodo', 'period']
+        # Date column patterns - Adding specific "Mes" pattern
+        date_patterns = ['mes', 'fecha', 'date', 'tiempo', 'time', 'periodo', 'period', 'mes de gestión', 'mes de gestion']
         for col in df.columns:
             if any(pattern in col.lower() for pattern in date_patterns):
-                if self._is_date_column(df[col]):
+                if self._is_date_column(df[col]) or 'mes' in col.lower():
                     self.date_column = col
                     break
         
@@ -53,8 +53,8 @@ class DataProcessor:
                     self.amount_column = col
                     break
         
-        # Salesperson column patterns
-        salesperson_patterns = ['vendedor', 'salesperson', 'ejecutivo', 'representative', 'rep', 'agent', 'agente']
+        # Salesperson column patterns - Adding specific "EEVV" and "Supervisor" patterns
+        salesperson_patterns = ['eevv', 'supervisor', 'vendedor', 'salesperson', 'ejecutivo', 'representative', 'rep', 'agent', 'agente', 'supervisor / jz']
         for col in df.columns:
             if any(pattern in col.lower() for pattern in salesperson_patterns):
                 self.salesperson_column = col
@@ -91,9 +91,25 @@ class DataProcessor:
     def _is_date_column(self, series):
         """Check if a column contains date data"""
         try:
+            # First try to convert to datetime
             pd.to_datetime(series.dropna().head(10))
             return True
         except:
+            # If it fails, check if it's a month column with text like "2024-01", "Enero 2024", etc.
+            sample_values = series.dropna().head(10).astype(str)
+            # Check for patterns like "YYYY-MM", "Mes YYYY", "MM/YYYY", etc.
+            for val in sample_values:
+                if any(pattern in val.lower() for pattern in ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                                                             'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+                                                             'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                                                             'jul', 'aug', 'sep', 'oct', 'nov', 'dec']):
+                    return True
+                # Check for YYYY-MM pattern
+                if len(val.split('-')) == 2 and val.split('-')[0].isdigit() and val.split('-')[1].isdigit():
+                    return True
+                # Check for MM/YYYY pattern
+                if len(val.split('/')) == 2 and all(part.isdigit() for part in val.split('/')):
+                    return True
             return False
     
     def _is_numeric_column(self, series):
@@ -108,7 +124,18 @@ class DataProcessor:
         """Clean and process the data"""
         # Convert date column
         if self.date_column:
-            df[self.date_column] = pd.to_datetime(df[self.date_column], errors='coerce')
+            try:
+                df[self.date_column] = pd.to_datetime(df[self.date_column], errors='coerce')
+            except:
+                # If conversion fails, try to handle month text data
+                try:
+                    # Handle cases like "Enero 2024", "2024-01", etc.
+                    df[self.date_column] = pd.to_datetime(df[self.date_column], format='%Y-%m', errors='coerce')
+                    if df[self.date_column].isna().all():
+                        # Try other formats
+                        df[self.date_column] = pd.to_datetime(df[self.date_column], format='%m/%Y', errors='coerce')
+                except:
+                    pass
         
         # Convert amount column
         if self.amount_column:
