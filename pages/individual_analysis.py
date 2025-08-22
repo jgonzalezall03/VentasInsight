@@ -124,7 +124,7 @@ def render_individual_analysis(df, data_processor):
     if data_processor.date_column and data_processor.amount_column:
         st.subheader("📈 Rendimiento en el Tiempo")
         fig_detail = create_salesperson_detail_chart(filtered_data, data_processor, selected_salesperson)
-        st.plotly_chart(fig_detail, use_container_width=True)
+        st.plotly_chart(fig_detail, use_container_width=True, key="individual_detail_chart")
         
         # Monthly performance table
         monthly_performance = filtered_data.groupby(
@@ -164,7 +164,7 @@ def render_individual_analysis(df, data_processor):
                 color_continuous_scale='Blues'
             )
             fig_products.update_layout(template='plotly_white')
-            st.plotly_chart(fig_products, use_container_width=True)
+            st.plotly_chart(fig_products, use_container_width=True, key="individual_products_bar")
         
         with col2:
             # Product distribution pie chart
@@ -175,7 +175,7 @@ def render_individual_analysis(df, data_processor):
                 title="Distribución de Ventas por Producto"
             )
             fig_pie.update_layout(template='plotly_white')
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_pie, use_container_width=True, key="individual_products_pie")
         
         # Product performance table
         display_products = product_performance.copy()
@@ -220,7 +220,7 @@ def render_individual_analysis(df, data_processor):
         )
         fig_customers.update_xaxes(tickangle=45)
         fig_customers.update_layout(template='plotly_white')
-        st.plotly_chart(fig_customers, use_container_width=True)
+        st.plotly_chart(fig_customers, use_container_width=True, key="individual_customers_bar")
         
         # Customer performance table
         display_customers = top_customers.copy()
@@ -273,7 +273,7 @@ def render_individual_analysis(df, data_processor):
                                  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
                     )
                 )
-                st.plotly_chart(fig_seasonal, use_container_width=True)
+                st.plotly_chart(fig_seasonal, use_container_width=True, key="individual_seasonal")
     
     # Export individual report
     st.subheader("📥 Exportar Reporte Individual")

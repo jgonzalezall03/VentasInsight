@@ -169,12 +169,12 @@ def show_general_dashboard():
     with col1:
         if processor.date_column and processor.amount_column:
             fig_trend = create_sales_trend_chart(filtered_df, processor)
-            st.plotly_chart(fig_trend, use_container_width=True)
+            st.plotly_chart(fig_trend, use_container_width=True, key="main_trend_chart")
     
     with col2:
         if processor.salesperson_column and processor.amount_column:
             fig_team = create_team_performance_chart(filtered_df, processor)
-            st.plotly_chart(fig_team, use_container_width=True)
+            st.plotly_chart(fig_team, use_container_width=True, key="main_team_chart")
     
     # Recent data table
     st.subheader("📋 Datos Recientes")

@@ -158,7 +158,7 @@ def render_forecasting_page(df, data_processor):
         
         # Forecast chart
         fig_forecast = forecaster.create_forecast_chart(df_agg, forecast_df, forecast_title)
-        st.plotly_chart(fig_forecast, use_container_width=True)
+        st.plotly_chart(fig_forecast, use_container_width=True, key="forecast_main_chart")
         
         # Forecast table
         st.subheader("📋 Tabla de Pronósticos")
@@ -286,7 +286,7 @@ def render_forecasting_page(df, data_processor):
             template='plotly_white'
         )
         
-        st.plotly_chart(fig_scenarios, use_container_width=True)
+        st.plotly_chart(fig_scenarios, use_container_width=True, key="forecast_scenarios")
         
         # Monthly breakdown if forecasting team
         if not individual_forecast and data_processor.salesperson_column:

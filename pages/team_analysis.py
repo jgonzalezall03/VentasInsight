@@ -77,7 +77,7 @@ def render_team_analysis(df, data_processor):
         
         # Team performance chart
         fig_team = create_team_performance_chart(filtered_df, data_processor)
-        st.plotly_chart(fig_team, use_container_width=True)
+        st.plotly_chart(fig_team, use_container_width=True, key="team_performance_main")
         
         # Detailed team statistics table
         st.subheader("📋 Estadísticas Detalladas del Equipo")
@@ -106,7 +106,7 @@ def render_team_analysis(df, data_processor):
             )
             fig_dist.update_xaxes(tickangle=45)
             fig_dist.update_layout(template='plotly_white')
-            st.plotly_chart(fig_dist, use_container_width=True)
+            st.plotly_chart(fig_dist, use_container_width=True, key="team_sales_distribution")
         
         with col2:
             # Transaction count by salesperson
@@ -117,13 +117,13 @@ def render_team_analysis(df, data_processor):
                 title="Distribución de Transacciones"
             )
             fig_trans.update_layout(template='plotly_white')
-            st.plotly_chart(fig_trans, use_container_width=True)
+            st.plotly_chart(fig_trans, use_container_width=True, key="team_transactions_pie")
     
     # Monthly comparison if date data available
     if data_processor.date_column:
         st.subheader("📅 Análisis Temporal")
         fig_monthly = create_monthly_comparison_chart(filtered_df, data_processor)
-        st.plotly_chart(fig_monthly, use_container_width=True)
+        st.plotly_chart(fig_monthly, use_container_width=True, key="team_monthly_comparison")
         
         # Monthly team performance
         if data_processor.salesperson_column:
@@ -157,13 +157,13 @@ def render_team_analysis(df, data_processor):
                 yaxis_title="Vendedor",
                 template='plotly_white'
             )
-            st.plotly_chart(fig_heatmap, use_container_width=True)
+            st.plotly_chart(fig_heatmap, use_container_width=True, key="team_heatmap")
     
     # Regional analysis if available
     if data_processor.region_column:
         st.subheader("🌍 Análisis Regional")
         fig_regional = create_regional_performance_chart(filtered_df, data_processor)
-        st.plotly_chart(fig_regional, use_container_width=True)
+        st.plotly_chart(fig_regional, use_container_width=True, key="team_regional_chart")
         
         # Regional team performance
         if data_processor.salesperson_column:
@@ -178,7 +178,7 @@ def render_team_analysis(df, data_processor):
                 title="Treemap - Ventas por Región y Vendedor"
             )
             fig_regional_team.update_layout(template='plotly_white')
-            st.plotly_chart(fig_regional_team, use_container_width=True)
+            st.plotly_chart(fig_regional_team, use_container_width=True, key="team_regional_treemap")
     
     # Team collaboration metrics
     if data_processor.customer_column and data_processor.salesperson_column:
