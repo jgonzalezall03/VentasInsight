@@ -24,20 +24,20 @@ def create_kpi_cards(df, data_processor):
     with col1:
         st.metric(
             label="💰 Ventas Totales",
-            value=f"${total_sales:,.2f}",
+            value=f"{total_sales:,.2f} UF",
             delta=None
         )
     
     with col2:
         st.metric(
             label="📊 Venta Promedio",
-            value=f"${avg_sale:,.2f}",
+            value=f"{avg_sale:,.2f} UF",
             delta=None
         )
     
     with col3:
         st.metric(
-            label="🧾 Transacciones",
+            label="🧾 Contratos",
             value=f"{num_transactions:,}",
             delta=None
         )
@@ -53,7 +53,7 @@ def create_kpi_cards(df, data_processor):
             avg_daily = total_sales / max(1, (df[data_processor.date_column].max() - df[data_processor.date_column].min()).days) if data_processor.date_column else 0
             st.metric(
                 label="📈 Promedio Diario",
-                value=f"${avg_daily:,.2f}",
+                value=f"{avg_daily:,.2f} UF",
                 delta=None
             )
 
@@ -93,7 +93,7 @@ def create_sales_trend_chart(df, data_processor):
     fig.update_layout(
         title='📈 Tendencia de Ventas Mensuales',
         xaxis_title='Fecha',
-        yaxis_title='Ventas ($)',
+        yaxis_title='Ventas (UF)',
         hovermode='x unified',
         template='plotly_white'
     )
@@ -121,13 +121,13 @@ def create_team_performance_chart(df, data_processor):
         orientation='h',
         name='Ventas Totales',
         marker_color='#2E86AB',
-        text=performance['total_sales'].apply(lambda x: f'${x:,.0f}'),
+        text=performance['total_sales'].apply(lambda x: f'{x:,.0f} UF'),
         textposition='outside'
     ))
     
     fig.update_layout(
         title='👥 Rendimiento del Equipo de Ventas',
-        xaxis_title='Ventas Totales ($)',
+        xaxis_title='Ventas Totales (UF)',
         yaxis_title='Vendedor',
         template='plotly_white',
         height=max(400, len(performance) * 50)
@@ -187,7 +187,7 @@ def create_monthly_comparison_chart(df, data_processor):
     fig.update_layout(
         title='📅 Comparación de Ventas por Mes',
         xaxis_title='Mes',
-        yaxis_title='Ventas ($)',
+        yaxis_title='Ventas (UF)',
         xaxis=dict(
             tickmode='array',
             tickvals=list(range(1, 13)),
@@ -225,17 +225,17 @@ def create_salesperson_detail_chart(df, data_processor, salesperson):
         x=monthly_sales[data_processor.date_column],
         y=monthly_sales['sum'],
         mode='lines+markers',
-        name='Ventas ($)',
+        name='Ventas (UF)',
         yaxis='y',
         line=dict(color='blue', width=3)
     ))
     
-    # Number of transactions
+    # Number of contracts
     fig.add_trace(go.Scatter(
         x=monthly_sales[data_processor.date_column],
         y=monthly_sales['count'],
         mode='lines+markers',
-        name='# Transacciones',
+        name='# Contratos',
         yaxis='y2',
         line=dict(color='red', width=3)
     ))
@@ -244,11 +244,11 @@ def create_salesperson_detail_chart(df, data_processor, salesperson):
         title=f'📊 Rendimiento Detallado - {salesperson}',
         xaxis_title='Fecha',
         yaxis=dict(
-            title='Ventas ($)',
+            title='Ventas (UF)',
             side='left'
         ),
         yaxis2=dict(
-            title='Número de Transacciones',
+            title='Número de Contratos',
             side='right',
             overlaying='y'
         ),
@@ -277,7 +277,7 @@ def create_regional_performance_chart(df, data_processor):
     
     fig.update_layout(
         xaxis_title='Región',
-        yaxis_title='Ventas ($)',
+        yaxis_title='Ventas (UF)',
         template='plotly_white'
     )
     

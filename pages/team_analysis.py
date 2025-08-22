@@ -57,7 +57,7 @@ def render_team_analysis(df, data_processor):
         team_metrics = filtered_df.groupby(data_processor.salesperson_column)[data_processor.amount_column].agg([
             'sum', 'count', 'mean', 'std'
         ]).reset_index()
-        team_metrics.columns = ['vendedor', 'ventas_totales', 'transacciones', 'venta_promedio', 'desviacion']
+        team_metrics.columns = ['vendedor', 'ventas_totales', 'contratos', 'venta_promedio', 'desviacion']
         team_metrics = team_metrics.sort_values('ventas_totales', ascending=False)
         
         # Top performers
@@ -67,13 +67,13 @@ def render_team_analysis(df, data_processor):
             st.markdown("🏆 **Top 3 Vendedores por Ventas**")
             top_3 = team_metrics.head(3)
             for i, row in top_3.iterrows():
-                st.write(f"{i+1}. **{row['vendedor']}** - ${row['ventas_totales']:,.2f}")
+                st.write(f"{i+1}. **{row['vendedor']}** - {row['ventas_totales']:,.2f} UF")
         
         with col2:
-            st.markdown("📈 **Top 3 Vendedores por Transacciones**")
-            top_3_trans = team_metrics.sort_values('transacciones', ascending=False).head(3)
+            st.markdown("📈 **Top 3 Vendedores por Contratos**")
+            top_3_trans = team_metrics.sort_values('contratos', ascending=False).head(3)
             for i, row in top_3_trans.iterrows():
-                st.write(f"{i+1}. **{row['vendedor']}** - {row['transacciones']} transacciones")
+                st.write(f"{i+1}. **{row['vendedor']}** - {row['contratos']} contratos")
         
         # Team performance chart
         fig_team = create_team_performance_chart(filtered_df, data_processor)
@@ -84,11 +84,11 @@ def render_team_analysis(df, data_processor):
         
         # Format the metrics table
         display_metrics = team_metrics.copy()
-        display_metrics['ventas_totales'] = display_metrics['ventas_totales'].apply(lambda x: f"${x:,.2f}")
-        display_metrics['venta_promedio'] = display_metrics['venta_promedio'].apply(lambda x: f"${x:,.2f}")
-        display_metrics['desviacion'] = display_metrics['desviacion'].apply(lambda x: f"${x:,.2f}" if pd.notna(x) else "N/A")
+        display_metrics['ventas_totales'] = display_metrics['ventas_totales'].apply(lambda x: f"{x:,.2f} UF")
+        display_metrics['venta_promedio'] = display_metrics['venta_promedio'].apply(lambda x: f"{x:,.2f} UF")
+        display_metrics['desviacion'] = display_metrics['desviacion'].apply(lambda x: f"{x:,.2f} UF" if pd.notna(x) else "N/A")
         
-        display_metrics.columns = ['Vendedor', 'Ventas Totales', 'Transacciones', 'Venta Promedio', 'Desviación Estándar']
+        display_metrics.columns = ['Vendedor', 'Ventas Totales', 'Contratos', 'Venta Promedio', 'Desviación Estándar']
         st.dataframe(display_metrics, use_container_width=True)
         
         # Performance distribution
@@ -114,7 +114,7 @@ def render_team_analysis(df, data_processor):
             fig_trans = px.pie(
                 values=transaction_counts.values,
                 names=transaction_counts.index,
-                title="Distribución de Transacciones"
+                title="Distribución de Contratos"
             )
             fig_trans.update_layout(template='plotly_white')
             st.plotly_chart(fig_trans, use_container_width=True, key="team_transactions_pie")

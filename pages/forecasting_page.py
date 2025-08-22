@@ -114,11 +114,11 @@ def render_forecasting_page(df, data_processor):
         
         with col2:
             avg_sales = df_agg[data_processor.amount_column].mean()
-            st.metric("💰 Venta Promedio", f"${avg_sales:,.2f}")
+            st.metric("💰 Venta Promedio", f"{avg_sales:,.2f} UF")
         
         with col3:
             total_sales = df_agg[data_processor.amount_column].sum()
-            st.metric("📈 Ventas Totales", f"${total_sales:,.2f}")
+            st.metric("📈 Ventas Totales", f"{total_sales:,.2f} UF")
         
         with col4:
             if len(df_agg) > 1:
@@ -145,10 +145,10 @@ def render_forecasting_page(df, data_processor):
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("💰 Ventas Proyectadas", f"${forecast_total:,.2f}")
+            st.metric("💰 Ventas Proyectadas", f"{forecast_total:,.2f} UF")
         
         with col2:
-            st.metric("📊 Promedio Proyectado", f"${avg_forecast:,.2f}")
+            st.metric("📊 Promedio Proyectado", f"{avg_forecast:,.2f} UF")
         
         with col3:
             if len(df_agg) > 0:
@@ -165,9 +165,9 @@ def render_forecasting_page(df, data_processor):
         
         display_forecast = forecast_df.copy()
         display_forecast[data_processor.date_column] = display_forecast[data_processor.date_column].dt.strftime('%Y-%m')
-        display_forecast['forecast'] = display_forecast['forecast'].apply(lambda x: f"${x:,.2f}")
-        display_forecast['lower_bound'] = display_forecast['lower_bound'].apply(lambda x: f"${x:,.2f}")
-        display_forecast['upper_bound'] = display_forecast['upper_bound'].apply(lambda x: f"${x:,.2f}")
+        display_forecast['forecast'] = display_forecast['forecast'].apply(lambda x: f"{x:,.2f} UF")
+        display_forecast['lower_bound'] = display_forecast['lower_bound'].apply(lambda x: f"{x:,.2f} UF")
+        display_forecast['upper_bound'] = display_forecast['upper_bound'].apply(lambda x: f"{x:,.2f} UF")
         
         display_forecast.columns = ['Período', 'Pronóstico', 'Límite Inferior', 'Límite Superior']
         st.dataframe(display_forecast, use_container_width=True)
@@ -183,10 +183,10 @@ def render_forecasting_page(df, data_processor):
                 col1, col2, col3, col4 = st.columns(4)
                 
                 with col1:
-                    st.metric("MAE", f"${metrics['mae']:,.2f}", help="Error Absoluto Medio")
+                    st.metric("MAE", f"{metrics['mae']:,.2f} UF", help="Error Absoluto Medio")
                 
                 with col2:
-                    st.metric("RMSE", f"${metrics['rmse']:,.2f}", help="Raíz del Error Cuadrático Medio")
+                    st.metric("RMSE", f"{metrics['rmse']:,.2f} UF", help="Raíz del Error Cuadrático Medio")
                 
                 with col3:
                     st.metric("MAPE", f"{metrics['mape']:.1f}%", help="Error Porcentual Absoluto Medio")
@@ -224,7 +224,7 @@ def render_forecasting_page(df, data_processor):
             
             st.metric(
                 "🚀 Escenario Optimista",
-                f"${optimistic_total:,.2f}",
+                f"{optimistic_total:,.2f} UF",
                 delta=f"+{optimistic_factor*100:.0f}%"
             )
         
@@ -243,7 +243,7 @@ def render_forecasting_page(df, data_processor):
             
             st.metric(
                 "🛡️ Escenario Conservador",
-                f"${conservative_total:,.2f}",
+                f"{conservative_total:,.2f} UF",
                 delta=f"-{conservative_factor*100:.0f}%"
             )
         
@@ -282,7 +282,7 @@ def render_forecasting_page(df, data_processor):
         fig_scenarios.update_layout(
             title="📊 Comparación de Escenarios",
             xaxis_title="Fecha",
-            yaxis_title="Ventas ($)",
+            yaxis_title="Ventas (UF),"
             template='plotly_white'
         )
         
@@ -310,7 +310,7 @@ def render_forecasting_page(df, data_processor):
             # Display table
             display_individual = individual_df.set_index('Period')
             for col in display_individual.columns:
-                display_individual[col] = display_individual[col].apply(lambda x: f"${x:,.2f}")
+                display_individual[col] = display_individual[col].apply(lambda x: f"{x:,.2f} UF")
             
             st.dataframe(display_individual, use_container_width=True)
         

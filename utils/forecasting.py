@@ -250,7 +250,7 @@ class SalesForecaster:
         fig.update_layout(
             title=title,
             xaxis_title='Fecha',
-            yaxis_title='Ventas',
+            yaxis_title='Ventas (UF)',
             hovermode='x unified',
             template='plotly_white'
         )

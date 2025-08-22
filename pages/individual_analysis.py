@@ -84,16 +84,16 @@ def render_individual_analysis(df, data_processor):
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric("💰 Ventas Totales", f"${total_sales:,.2f}")
+            st.metric("💰 Ventas Totales", f"{total_sales:,.2f} UF")
         
         with col2:
-            st.metric("📊 Venta Promedio", f"${avg_sale:,.2f}")
+            st.metric("📊 Venta Promedio", f"{avg_sale:,.2f} UF")
         
         with col3:
-            st.metric("🧾 Transacciones", f"{num_transactions:,}")
+            st.metric("🧾 Contratos", f"{num_transactions:,}")
         
         with col4:
-            st.metric("🎯 Venta Máxima", f"${max_sale:,.2f}")
+            st.metric("🎯 Venta Máxima", f"{max_sale:,.2f} UF")
         
         # Compare with team average
         if len(df) > len(filtered_data):  # Has team data
@@ -108,7 +108,7 @@ def render_individual_analysis(df, data_processor):
                 performance_vs_avg = ((avg_sale - team_avg_sale) / team_avg_sale) * 100
                 st.metric(
                     "📊 vs. Promedio del Equipo (Venta)",
-                    f"${avg_sale:,.2f}",
+                    f"{avg_sale:,.2f} UF",
                     delta=f"{performance_vs_avg:+.1f}%"
                 )
             
@@ -116,7 +116,7 @@ def render_individual_analysis(df, data_processor):
                 total_vs_avg = ((total_sales - team_total_avg) / team_total_avg) * 100
                 st.metric(
                     "💰 vs. Promedio del Equipo (Total)",
-                    f"${total_sales:,.2f}",
+                    f"{total_sales:,.2f} UF",
                     delta=f"{total_vs_avg:+.1f}%"
                 )
     
@@ -131,10 +131,10 @@ def render_individual_analysis(df, data_processor):
             filtered_data[data_processor.date_column].dt.to_period('M').astype(str)
         )[data_processor.amount_column].agg(['sum', 'count', 'mean']).reset_index()
         
-        monthly_performance.columns = ['Mes', 'Ventas Totales', 'Transacciones', 'Venta Promedio']
+        monthly_performance.columns = ['Mes', 'Ventas Totales', 'Contratos', 'Venta Promedio']
         monthly_performance['Mes'] = monthly_performance['Mes'].astype(str)
-        monthly_performance['Ventas Totales'] = monthly_performance['Ventas Totales'].apply(lambda x: f"${x:,.2f}")
-        monthly_performance['Venta Promedio'] = monthly_performance['Venta Promedio'].apply(lambda x: f"${x:,.2f}")
+        monthly_performance['Ventas Totales'] = monthly_performance['Ventas Totales'].apply(lambda x: f"{x:,.2f} UF")
+        monthly_performance['Venta Promedio'] = monthly_performance['Venta Promedio'].apply(lambda x: f"{x:,.2f} UF")
         
         st.subheader("📅 Rendimiento Mensual")
         st.dataframe(monthly_performance, use_container_width=True)
@@ -146,7 +146,7 @@ def render_individual_analysis(df, data_processor):
         product_performance = filtered_data.groupby(data_processor.product_column)[data_processor.amount_column].agg([
             'sum', 'count', 'mean'
         ]).reset_index()
-        product_performance.columns = ['Producto', 'Ventas Totales', 'Transacciones', 'Venta Promedio']
+        product_performance.columns = ['Producto', 'Ventas Totales', 'Contratos', 'Venta Promedio']
         product_performance = product_performance.sort_values('Ventas Totales', ascending=False)
         
         col1, col2 = st.columns(2)
@@ -179,8 +179,8 @@ def render_individual_analysis(df, data_processor):
         
         # Product performance table
         display_products = product_performance.copy()
-        display_products['Ventas Totales'] = display_products['Ventas Totales'].apply(lambda x: f"${x:,.2f}")
-        display_products['Venta Promedio'] = display_products['Venta Promedio'].apply(lambda x: f"${x:,.2f}")
+        display_products['Ventas Totales'] = display_products['Ventas Totales'].apply(lambda x: f"{x:,.2f} UF")
+        display_products['Venta Promedio'] = display_products['Venta Promedio'].apply(lambda x: f"{x:,.2f} UF")
         
         st.dataframe(display_products, use_container_width=True)
     
@@ -191,7 +191,7 @@ def render_individual_analysis(df, data_processor):
         customer_performance = filtered_data.groupby(data_processor.customer_column)[data_processor.amount_column].agg([
             'sum', 'count', 'mean'
         ]).reset_index()
-        customer_performance.columns = ['Cliente', 'Ventas Totales', 'Transacciones', 'Venta Promedio']
+        customer_performance.columns = ['Cliente', 'Ventas Totales', 'Contratos', 'Venta Promedio']
         customer_performance = customer_performance.sort_values('Ventas Totales', ascending=False)
         
         col1, col2 = st.columns(2)
@@ -202,9 +202,9 @@ def render_individual_analysis(df, data_processor):
         
         with col2:
             avg_per_customer = customer_performance['Ventas Totales'].mean()
-            st.metric("💰 Promedio por Cliente", f"${avg_per_customer:,.2f}")
+            st.metric("💰 Promedio por Cliente", f"{avg_per_customer:,.2f} UF")
             
-            repeat_customers = len(customer_performance[customer_performance['Transacciones'] > 1])
+            repeat_customers = len(customer_performance[customer_performance['Contratos'] > 1])
             repeat_rate = (repeat_customers / len(customer_performance)) * 100
             st.metric("🔄 Tasa de Repetición", f"{repeat_rate:.1f}%")
         
@@ -224,8 +224,8 @@ def render_individual_analysis(df, data_processor):
         
         # Customer performance table
         display_customers = top_customers.copy()
-        display_customers['Ventas Totales'] = display_customers['Ventas Totales'].apply(lambda x: f"${x:,.2f}")
-        display_customers['Venta Promedio'] = display_customers['Venta Promedio'].apply(lambda x: f"${x:,.2f}")
+        display_customers['Ventas Totales'] = display_customers['Ventas Totales'].apply(lambda x: f"{x:,.2f} UF")
+        display_customers['Venta Promedio'] = display_customers['Venta Promedio'].apply(lambda x: f"{x:,.2f} UF")
         
         st.dataframe(display_customers, use_container_width=True)
     
@@ -264,7 +264,7 @@ def render_individual_analysis(df, data_processor):
                 )
                 fig_seasonal.update_layout(
                     xaxis_title="Mes",
-                    yaxis_title="Venta Promedio ($)",
+                    yaxis_title="Venta Promedio (UF),"
                     template='plotly_white',
                     xaxis=dict(
                         tickmode='array',
@@ -284,7 +284,7 @@ def render_individual_analysis(df, data_processor):
             'Vendedor': [selected_salesperson],
             'Ventas_Totales': [total_sales if data_processor.amount_column else 0],
             'Venta_Promedio': [avg_sale if data_processor.amount_column else 0],
-            'Transacciones': [num_transactions if data_processor.amount_column else 0],
+            'Contratos': [num_transactions if data_processor.amount_column else 0],
             'Venta_Maxima': [max_sale if data_processor.amount_column else 0]
         }
         

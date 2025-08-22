@@ -222,7 +222,7 @@ class DataProcessor:
             'sum', 'count', 'mean'
         ]).reset_index()
         
-        monthly.columns = ['month', 'total_sales', 'transactions', 'avg_sale']
+        monthly.columns = ['month', 'total_sales', 'contratos', 'avg_sale']
         monthly['month'] = monthly['month'].astype(str)
         
         return monthly
@@ -236,7 +236,7 @@ class DataProcessor:
             'sum', 'count', 'mean', 'std'
         ]).reset_index()
         
-        performance.columns = ['salesperson', 'total_sales', 'transactions', 'avg_sale', 'std_sale']
+        performance.columns = ['salesperson', 'total_sales', 'contratos', 'avg_sale', 'std_sale']
         performance = performance.sort_values('total_sales', ascending=False)
         
         return performance
