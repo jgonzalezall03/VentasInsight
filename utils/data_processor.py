@@ -37,28 +37,34 @@ class DataProcessor:
         """Automatically detect column types based on common patterns"""
         columns = df.columns.str.lower()
         
-        # Date column patterns - Adding specific "Mes" pattern
-        date_patterns = ['mes', 'fecha', 'date', 'tiempo', 'time', 'periodo', 'period', 'mes de gestión', 'mes de gestion']
+        # Date column patterns - Adding specific "Mes de gestión" pattern
+        date_patterns = ['mes de gestión', 'mes de gestion', 'mes', 'fecha', 'date', 'tiempo', 'time', 'periodo', 'period']
         for col in df.columns:
             if any(pattern in col.lower() for pattern in date_patterns):
                 if self._is_date_column(df[col]) or 'mes' in col.lower():
                     self.date_column = col
-                    break
+                    # Prioritize "Mes de gestión" if found
+                    if 'mes de gestión' in col.lower() or 'mes de gestion' in col.lower():
+                        break
         
-        # Amount/Sales column patterns
-        amount_patterns = ['monto', 'amount', 'venta', 'sale', 'precio', 'price', 'valor', 'value', 'revenue', 'ingreso']
+        # Amount/Sales column patterns - Adding specific "Venta UF" pattern
+        amount_patterns = ['venta uf', 'monto', 'amount', 'venta', 'sale', 'precio', 'price', 'valor', 'value', 'revenue', 'ingreso', 'contratos']
         for col in df.columns:
             if any(pattern in col.lower() for pattern in amount_patterns):
                 if self._is_numeric_column(df[col]):
                     self.amount_column = col
-                    break
+                    # Prioritize "Venta UF" if found
+                    if 'venta uf' in col.lower():
+                        break
         
         # Salesperson column patterns - Adding specific "EEVV" and "Supervisor" patterns
-        salesperson_patterns = ['eevv', 'supervisor', 'vendedor', 'salesperson', 'ejecutivo', 'representative', 'rep', 'agent', 'agente', 'supervisor / jz']
+        salesperson_patterns = ['eevv', 'supervisor / jz', 'supervisor', 'vendedor', 'salesperson', 'ejecutivo', 'representative', 'rep', 'agent', 'agente']
         for col in df.columns:
             if any(pattern in col.lower() for pattern in salesperson_patterns):
                 self.salesperson_column = col
-                break
+                # Prioritize "EEVV" for individual analysis
+                if col.lower() == 'eevv':
+                    break
         
         # Product column patterns
         product_patterns = ['producto', 'product', 'item', 'articulo', 'servicio', 'service']

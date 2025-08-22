@@ -36,6 +36,21 @@ def main():
             help="Formatos soportados: .xlsx, .xls"
         )
         
+        # Botón para cargar archivo de ejemplo
+        if st.button("📊 Cargar archivo de ejemplo del proyecto"):
+            try:
+                import os
+                if os.path.exists("attached_assets/ventas_limpias_1755883892344.xlsx"):
+                    with st.spinner("Cargando archivo de ejemplo..."):
+                        st.session_state.data_processor = DataProcessor()
+                        st.session_state.df = st.session_state.data_processor.load_and_process_excel("attached_assets/ventas_limpias_1755883892344.xlsx")
+                    st.success("✅ Archivo de ejemplo cargado exitosamente!")
+                    st.rerun()
+                else:
+                    st.error("No se encontró el archivo de ejemplo")
+            except Exception as e:
+                st.error(f"Error al cargar el archivo de ejemplo: {str(e)}")
+        
         if uploaded_file is not None:
             try:
                 with st.spinner("Procesando archivo..."):
