@@ -12,6 +12,7 @@ class DataProcessor:
         self.customer_column = None
         self.region_column = None
         self.category_column = None
+        self.contract_column = None
         
     def load_and_process_excel(self, uploaded_file):
         """Load and process Excel file"""
@@ -35,36 +36,83 @@ class DataProcessor:
     
     def _detect_column_types(self, df):
         """Automatically detect column types based on common patterns"""
-        columns = df.columns.str.lower()
+        # Enhanced date column patterns
+        date_patterns = [
+            'mes de gestión', 'mes de gestion', 'fecha_venta', 'fecha_cierre',
+            'periodo', 'mes', 'año', 'fecha', 'date', 'time', 'timestamp'
+        ]
         
-        # Date column patterns - Adding specific "Mes de gestión" pattern
-        date_patterns = ['mes de gestión', 'mes de gestion', 'mes', 'fecha', 'date', 'tiempo', 'time', 'periodo', 'period']
+        # Enhanced amount/sales patterns
+        amount_patterns = [
+            'venta uf', 'venta_uf', 'monto_uf', 'valor_uf', 'precio_uf',
+            'monto', 'amount', 'venta', 'ventas', 'sale', 'sales',
+            'precio', 'price', 'valor', 'value', 'revenue', 'ingreso'
+        ]
+        
+        # Enhanced salesperson patterns
+        salesperson_patterns = [
+            'eevv', 'ejecutivo', 'asesor', 'vendedor', 'supervisor',
+            'salesperson', 'representative', 'rep', 'agent', 'agente',
+            'consultor', 'broker'
+        ]
+        
+        # Product patterns
+        product_patterns = [
+            'producto', 'product', 'item', 'articulo', 'servicio', 'service',
+            'tipo_producto', 'categoria_producto', 'linea', 'modelo'
+        ]
+        
+        # Customer patterns
+        customer_patterns = [
+            'cliente', 'customer', 'client', 'rut_cliente', 'empresa',
+            'company', 'razon_social', 'nombre_cliente'
+        ]
+        
+        # Region patterns
+        region_patterns = [
+            'region', 'zona', 'area', 'territory', 'territorio',
+            'ciudad', 'city', 'sucursal', 'oficina'
+        ]
+        
+        # Contract patterns
+        contract_patterns = [
+            'contratos', 'contrato', 'contracts', 'contract',
+            'num_contratos', 'cantidad_contratos', 'total_contratos'
+        ]
+        
+        # Detect columns with priority scoring
+        self._detect_with_priority(df, 'date_column', date_patterns, self._is_date_column)
+        self._detect_with_priority(df, 'amount_column', amount_patterns, self._is_numeric_column)
+        self._detect_with_priority(df, 'salesperson_column', salesperson_patterns, lambda x: True)
+        self._detect_with_priority(df, 'product_column', product_patterns, lambda x: True)
+        self._detect_with_priority(df, 'customer_column', customer_patterns, lambda x: True)
+        self._detect_with_priority(df, 'region_column', region_patterns, lambda x: True)
+        self._detect_with_priority(df, 'contract_column', contract_patterns, self._is_numeric_column)
+    
+    def _detect_with_priority(self, df, attr_name, patterns, validator):
+        """Detect column with priority scoring"""
+        best_match = None
+        best_score = 0
+        
         for col in df.columns:
-            if any(pattern in col.lower() for pattern in date_patterns):
-                if self._is_date_column(df[col]) or 'mes' in col.lower():
-                    self.date_column = col
-                    # Prioritize "Mes de gestión" if found
-                    if 'mes de gestión' in col.lower() or 'mes de gestion' in col.lower():
+            col_lower = col.lower().strip()
+            for i, pattern in enumerate(patterns):
+                if pattern in col_lower:
+                    # Higher score for exact matches and earlier patterns
+                    score = (len(patterns) - i) * 10
+                    if col_lower == pattern:
+                        score += 50  # Bonus for exact match
+                    if col_lower.startswith(pattern) or col_lower.endswith(pattern):
+                        score += 20  # Bonus for start/end match
+                    
+                    # Validate the column content
+                    if validator(df[col]) and score > best_score:
+                        best_match = col
+                        best_score = score
                         break
         
-        # Amount/Sales column patterns - Adding specific "Venta UF" pattern
-        amount_patterns = ['venta uf', 'monto', 'amount', 'venta', 'sale', 'precio', 'price', 'valor', 'value', 'revenue', 'ingreso', 'contratos']
-        for col in df.columns:
-            if any(pattern in col.lower() for pattern in amount_patterns):
-                if self._is_numeric_column(df[col]):
-                    self.amount_column = col
-                    # Prioritize "Venta UF" if found
-                    if 'venta uf' in col.lower():
-                        break
-        
-        # Salesperson column patterns - Adding specific "EEVV" and "Supervisor" patterns
-        salesperson_patterns = ['eevv', 'supervisor / jz', 'supervisor', 'vendedor', 'salesperson', 'ejecutivo', 'representative', 'rep', 'agent', 'agente']
-        for col in df.columns:
-            if any(pattern in col.lower() for pattern in salesperson_patterns):
-                self.salesperson_column = col
-                # Prioritize "EEVV" for individual analysis
-                if col.lower() == 'eevv':
-                    break
+        if best_match:
+            setattr(self, attr_name, best_match)
         
         # Product column patterns
         product_patterns = ['producto', 'product', 'item', 'articulo', 'servicio', 'service']
@@ -95,67 +143,105 @@ class DataProcessor:
                 break
     
     def _is_date_column(self, series):
-        """Check if a column contains date data"""
-        try:
-            # First try to convert to datetime
-            pd.to_datetime(series.dropna().head(10))
-            return True
-        except:
-            # If it fails, check if it's a month column with text like "2024-01", "Enero 2024", etc.
-            sample_values = series.dropna().head(10).astype(str)
-            # Check for patterns like "YYYY-MM", "Mes YYYY", "MM/YYYY", etc.
-            for val in sample_values:
-                if any(pattern in val.lower() for pattern in ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-                                                             'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-                                                             'jan', 'feb', 'mar', 'apr', 'may', 'jun',
-                                                             'jul', 'aug', 'sep', 'oct', 'nov', 'dec']):
-                    return True
-                # Check for YYYY-MM pattern
-                if len(val.split('-')) == 2 and val.split('-')[0].isdigit() and val.split('-')[1].isdigit():
-                    return True
-                # Check for MM/YYYY pattern
-                if len(val.split('/')) == 2 and all(part.isdigit() for part in val.split('/')):
-                    return True
+        """Enhanced date column detection"""
+        if series.empty:
             return False
+            
+        sample_values = series.dropna().head(20).astype(str)
+        date_indicators = 0
+        
+        for val in sample_values:
+            val_clean = val.strip().lower()
+            
+            # Try direct datetime conversion
+            try:
+                pd.to_datetime(val)
+                date_indicators += 1
+                continue
+            except:
+                pass
+            
+            # Check for month names
+            month_names = [
+                'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+                'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+            ]
+            if any(month in val_clean for month in month_names):
+                date_indicators += 1
+                continue
+            
+            # Check for date patterns
+            import re
+            date_patterns = [
+                r'\d{4}-\d{1,2}',  # YYYY-MM
+                r'\d{1,2}/\d{4}',  # MM/YYYY
+                r'\d{4}/\d{1,2}',  # YYYY/MM
+                r'\d{1,2}-\d{4}',  # MM-YYYY
+                r'\d{4}\d{2}',     # YYYYMM
+            ]
+            
+            for pattern in date_patterns:
+                if re.match(pattern, val_clean):
+                    date_indicators += 1
+                    break
+        
+        # Consider it a date column if >70% of values look like dates
+        return date_indicators / len(sample_values) > 0.7
     
     def _is_numeric_column(self, series):
-        """Check if a column contains numeric data"""
-        try:
-            pd.to_numeric(series.dropna().head(10))
-            return True
-        except:
+        """Enhanced numeric column detection"""
+        if series.empty:
             return False
-    
-    def _clean_data(self, df):
-        """Clean and process the data"""
-        # Convert date column
-        if self.date_column:
+            
+        sample_values = series.dropna().head(20)
+        numeric_count = 0
+        
+        for val in sample_values:
             try:
-                df[self.date_column] = pd.to_datetime(df[self.date_column], errors='coerce')
+                # Try direct numeric conversion
+                pd.to_numeric(val)
+                numeric_count += 1
             except:
-                # If conversion fails, try to handle month text data
+                # Try cleaning common formats
+                val_str = str(val).strip()
+                # Remove common currency symbols and separators
+                cleaned = val_str.replace('$', '').replace(',', '').replace('.', '').replace(' ', '')
                 try:
-                    # Handle cases like "Enero 2024", "2024-01", etc.
-                    df[self.date_column] = pd.to_datetime(df[self.date_column], format='%Y-%m', errors='coerce')
-                    if df[self.date_column].isna().all():
-                        # Try other formats
-                        df[self.date_column] = pd.to_datetime(df[self.date_column], format='%m/%Y', errors='coerce')
+                    float(cleaned)
+                    numeric_count += 1
                 except:
                     pass
         
-        # Convert amount column
+        # Consider numeric if >80% of values are numeric
+        return numeric_count / len(sample_values) > 0.8
+    
+    def _clean_data(self, df):
+        """Enhanced data cleaning and processing"""
+        df = df.copy()
+        
+        # Enhanced date column processing
+        if self.date_column:
+            df[self.date_column] = self._clean_date_column(df[self.date_column])
+        
+        # Enhanced amount column processing
         if self.amount_column:
-            # Remove currency symbols and convert to numeric
-            if df[self.amount_column].dtype == 'object':
-                df[self.amount_column] = df[self.amount_column].astype(str).str.replace(r'[^\d.-]', '', regex=True)
-            df[self.amount_column] = pd.to_numeric(df[self.amount_column], errors='coerce')
+            df[self.amount_column] = self._clean_amount_column(df[self.amount_column])
         
         # Clean text columns
         text_columns = [self.salesperson_column, self.product_column, self.customer_column, 
                        self.region_column, self.category_column]
         for col in text_columns:
             if col and col in df.columns:
-                df[col] = df[col].astype(str).str.strip()
+                df[col] = self._clean_text_column(df[col])
+        
+        # Clean contract column if it exists
+        if self.contract_column and self.contract_column in df.columns:
+            df[self.contract_column] = self._clean_amount_column(df[self.contract_column])
+        
+        # Remove duplicates
+        df = df.drop_duplicates()
         
         # Remove rows with missing critical data
         critical_columns = [col for col in [self.date_column, self.amount_column] if col]
@@ -168,8 +254,52 @@ class DataProcessor:
         
         return df
     
+    def _clean_date_column(self, series):
+        """Clean and convert date column with multiple format attempts"""
+        # Try multiple date formats
+        date_formats = [
+            '%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%Y/%m/%d',
+            '%Y-%m', '%m/%Y', '%Y/%m', '%d-%m-%Y',
+            '%B %Y', '%b %Y', '%Y %B', '%Y %b'
+        ]
+        
+        result = pd.to_datetime(series, errors='coerce')
+        
+        # If many NaT values, try specific formats
+        if result.isna().sum() > len(series) * 0.3:
+            for fmt in date_formats:
+                try:
+                    temp_result = pd.to_datetime(series, format=fmt, errors='coerce')
+                    if temp_result.isna().sum() < result.isna().sum():
+                        result = temp_result
+                except:
+                    continue
+        
+        return result
+    
+    def _clean_amount_column(self, series):
+        """Clean and convert amount column"""
+        if series.dtype == 'object':
+            # Remove currency symbols, spaces, and convert decimal separators
+            cleaned = series.astype(str)
+            cleaned = cleaned.str.replace(r'[^\d.,-]', '', regex=True)
+            cleaned = cleaned.str.replace(',', '.')
+            cleaned = cleaned.str.replace(r'\.(?=.*\.)', '', regex=True)  # Remove extra dots
+        else:
+            cleaned = series
+        
+        return pd.to_numeric(cleaned, errors='coerce')
+    
+    def _clean_text_column(self, series):
+        """Clean text columns"""
+        cleaned = series.astype(str)
+        cleaned = cleaned.str.strip()
+        cleaned = cleaned.str.title()  # Proper case
+        cleaned = cleaned.replace('Nan', np.nan)
+        return cleaned
+    
     def get_detected_columns(self):
-        """Return detected columns information"""
+        """Return detected columns information with confidence scores"""
         return {
             'fecha': self.date_column,
             'monto': self.amount_column,
@@ -177,8 +307,54 @@ class DataProcessor:
             'producto': self.product_column,
             'cliente': self.customer_column,
             'region': self.region_column,
-            'categoria': self.category_column
+            'categoria': self.category_column,
+            'contratos': self.contract_column
         }
+    
+    def get_data_quality_report(self, df):
+        """Generate data quality report"""
+        report = {
+            'total_rows': len(df),
+            'total_columns': len(df.columns),
+            'missing_data': {},
+            'data_types': {},
+            'duplicates': df.duplicated().sum(),
+            'date_range': None,
+            'amount_stats': None
+        }
+        
+        # Missing data analysis
+        for col in df.columns:
+            missing_pct = (df[col].isna().sum() / len(df)) * 100
+            report['missing_data'][col] = f"{missing_pct:.1f}%"
+        
+        # Data types
+        for col in df.columns:
+            report['data_types'][col] = str(df[col].dtype)
+        
+        # Date range
+        if self.date_column and self.date_column in df.columns:
+            try:
+                min_date = df[self.date_column].min()
+                max_date = df[self.date_column].max()
+                report['date_range'] = f"{min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}"
+            except:
+                report['date_range'] = "Invalid date format"
+        
+        # Amount statistics
+        if self.amount_column and self.amount_column in df.columns:
+            try:
+                stats = df[self.amount_column].describe()
+                report['amount_stats'] = {
+                    'min': f"{stats['min']:,.2f}",
+                    'max': f"{stats['max']:,.2f}",
+                    'mean': f"{stats['mean']:,.2f}",
+                    'median': f"{stats['50%']:,.2f}"
+                }
+            except:
+                report['amount_stats'] = "Invalid numeric format"
+        
+        return report
     
     def filter_by_date_range(self, df, start_date, end_date):
         """Filter dataframe by date range"""

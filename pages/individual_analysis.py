@@ -78,8 +78,20 @@ def render_individual_analysis(df, data_processor):
     if data_processor.amount_column:
         total_sales = filtered_data[data_processor.amount_column].sum()
         avg_sale = filtered_data[data_processor.amount_column].mean()
-        num_transactions = len(filtered_data)
         max_sale = filtered_data[data_processor.amount_column].max()
+        
+        # Count contracts - use contract column from Excel if available
+        if data_processor.contract_column:
+            # Use the contract column directly from Excel
+            num_contracts = filtered_data[data_processor.contract_column].sum()
+        elif data_processor.customer_column and data_processor.date_column:
+            # Count unique contracts as unique customer-month combinations
+            df_contracts = filtered_data.copy()
+            df_contracts['month_year'] = df_contracts[data_processor.date_column].dt.to_period('M')
+            num_contracts = df_contracts.groupby([data_processor.customer_column, 'month_year']).size().count()
+        else:
+            # Fallback to counting total transactions
+            num_contracts = len(filtered_data)
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -90,7 +102,7 @@ def render_individual_analysis(df, data_processor):
             st.metric("📊 Venta Promedio", f"{avg_sale:,.2f} UF")
         
         with col3:
-            st.metric("🧾 Contratos", f"{num_transactions:,}")
+            st.metric("🧾 Contratos", f"{num_contracts:,}")
         
         with col4:
             st.metric("🎯 Venta Máxima", f"{max_sale:,.2f} UF")
@@ -127,11 +139,21 @@ def render_individual_analysis(df, data_processor):
         st.plotly_chart(fig_detail, use_container_width=True, key="individual_detail_chart")
         
         # Monthly performance table
-        monthly_performance = filtered_data.groupby(
-            filtered_data[data_processor.date_column].dt.to_period('M').astype(str)
-        )[data_processor.amount_column].agg(['sum', 'count', 'mean']).reset_index()
-        
-        monthly_performance.columns = ['Mes', 'Ventas Totales', 'Contratos', 'Venta Promedio']
+        if data_processor.contract_column:
+            # Use contract column from Excel
+            monthly_performance = filtered_data.groupby(
+                filtered_data[data_processor.date_column].dt.to_period('M').astype(str)
+            ).agg({
+                data_processor.amount_column: ['sum', 'mean'],
+                data_processor.contract_column: 'sum'
+            }).reset_index()
+            monthly_performance.columns = ['Mes', 'Ventas Totales', 'Venta Promedio', 'Contratos']
+        else:
+            # Fallback to counting transactions
+            monthly_performance = filtered_data.groupby(
+                filtered_data[data_processor.date_column].dt.to_period('M').astype(str)
+            )[data_processor.amount_column].agg(['sum', 'count', 'mean']).reset_index()
+            monthly_performance.columns = ['Mes', 'Ventas Totales', 'Contratos', 'Venta Promedio']
         monthly_performance['Mes'] = monthly_performance['Mes'].astype(str)
         monthly_performance['Ventas Totales'] = monthly_performance['Ventas Totales'].apply(lambda x: f"{x:,.2f} UF")
         monthly_performance['Venta Promedio'] = monthly_performance['Venta Promedio'].apply(lambda x: f"{x:,.2f} UF")
@@ -143,10 +165,19 @@ def render_individual_analysis(df, data_processor):
     if data_processor.product_column and data_processor.amount_column:
         st.subheader("🛍️ Rendimiento por Producto")
         
-        product_performance = filtered_data.groupby(data_processor.product_column)[data_processor.amount_column].agg([
-            'sum', 'count', 'mean'
-        ]).reset_index()
-        product_performance.columns = ['Producto', 'Ventas Totales', 'Contratos', 'Venta Promedio']
+        if data_processor.contract_column:
+            # Use contract column from Excel
+            product_performance = filtered_data.groupby(data_processor.product_column).agg({
+                data_processor.amount_column: ['sum', 'mean'],
+                data_processor.contract_column: 'sum'
+            }).reset_index()
+            product_performance.columns = ['Producto', 'Ventas Totales', 'Venta Promedio', 'Contratos']
+        else:
+            # Fallback to counting transactions
+            product_performance = filtered_data.groupby(data_processor.product_column)[data_processor.amount_column].agg([
+                'sum', 'count', 'mean'
+            ]).reset_index()
+            product_performance.columns = ['Producto', 'Ventas Totales', 'Contratos', 'Venta Promedio']
         product_performance = product_performance.sort_values('Ventas Totales', ascending=False)
         
         col1, col2 = st.columns(2)
@@ -188,10 +219,19 @@ def render_individual_analysis(df, data_processor):
     if data_processor.customer_column and data_processor.amount_column:
         st.subheader("👥 Análisis de Clientes")
         
-        customer_performance = filtered_data.groupby(data_processor.customer_column)[data_processor.amount_column].agg([
-            'sum', 'count', 'mean'
-        ]).reset_index()
-        customer_performance.columns = ['Cliente', 'Ventas Totales', 'Contratos', 'Venta Promedio']
+        if data_processor.contract_column:
+            # Use contract column from Excel
+            customer_performance = filtered_data.groupby(data_processor.customer_column).agg({
+                data_processor.amount_column: ['sum', 'mean'],
+                data_processor.contract_column: 'sum'
+            }).reset_index()
+            customer_performance.columns = ['Cliente', 'Ventas Totales', 'Venta Promedio', 'Contratos']
+        else:
+            # Fallback to counting transactions
+            customer_performance = filtered_data.groupby(data_processor.customer_column)[data_processor.amount_column].agg([
+                'sum', 'count', 'mean'
+            ]).reset_index()
+            customer_performance.columns = ['Cliente', 'Ventas Totales', 'Contratos', 'Venta Promedio']
         customer_performance = customer_performance.sort_values('Ventas Totales', ascending=False)
         
         col1, col2 = st.columns(2)
@@ -264,7 +304,7 @@ def render_individual_analysis(df, data_processor):
                 )
                 fig_seasonal.update_layout(
                     xaxis_title="Mes",
-                    yaxis_title="Venta Promedio (UF),"
+                    yaxis_title="Venta Promedio (UF)",
                     template='plotly_white',
                     xaxis=dict(
                         tickmode='array',
@@ -275,6 +315,52 @@ def render_individual_analysis(df, data_processor):
                 )
                 st.plotly_chart(fig_seasonal, use_container_width=True, key="individual_seasonal")
     
+    # Individual efficiency analysis
+    if data_processor.amount_column:
+        st.subheader("⚙️ Análisis de Eficiencia Individual")
+        
+        # Calculate individual efficiency
+        if data_processor.contract_column:
+            total_contracts = filtered_data[data_processor.contract_column].sum()
+        else:
+            total_contracts = len(filtered_data)
+        
+        efficiency = total_sales / total_contracts if total_contracts > 0 else 0
+        
+        # Compare with team efficiency
+        if data_processor.contract_column:
+            team_efficiency_data = df.groupby(data_processor.salesperson_column).agg({
+                data_processor.amount_column: 'sum',
+                data_processor.contract_column: 'sum'
+            })
+            team_efficiency_data['efficiency'] = team_efficiency_data[data_processor.amount_column] / team_efficiency_data[data_processor.contract_column]
+        else:
+            team_efficiency_data = df.groupby(data_processor.salesperson_column)[data_processor.amount_column].agg(['sum', 'count'])
+            team_efficiency_data['efficiency'] = team_efficiency_data['sum'] / team_efficiency_data['count']
+        
+        # Handle NaN and infinite values
+        team_efficiency_data['efficiency'] = team_efficiency_data['efficiency'].replace([np.inf, -np.inf], np.nan)
+        team_efficiency_data = team_efficiency_data.dropna(subset=['efficiency'])
+        
+        team_avg_efficiency = team_efficiency_data['efficiency'].mean()
+        efficiency_rank = (team_efficiency_data['efficiency'] > efficiency).sum() + 1 if not np.isnan(efficiency) else len(team_efficiency_data)
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("⚙️ Eficiencia (UF/Contrato)", f"{efficiency:,.2f} UF")
+        
+        with col2:
+            efficiency_vs_team = ((efficiency - team_avg_efficiency) / team_avg_efficiency) * 100
+            st.metric(
+                "📈 vs. Promedio del Equipo",
+                f"{efficiency:,.2f} UF",
+                delta=f"{efficiency_vs_team:+.1f}%"
+            )
+        
+        with col3:
+            st.metric("🏆 Ranking de Eficiencia", f"#{efficiency_rank} de {len(team_efficiency_data)}")
+    
     # Export individual report
     st.subheader("📥 Exportar Reporte Individual")
     
@@ -284,7 +370,7 @@ def render_individual_analysis(df, data_processor):
             'Vendedor': [selected_salesperson],
             'Ventas_Totales': [total_sales if data_processor.amount_column else 0],
             'Venta_Promedio': [avg_sale if data_processor.amount_column else 0],
-            'Contratos': [num_transactions if data_processor.amount_column else 0],
+            'Contratos': [num_contracts if data_processor.amount_column else 0],
             'Venta_Maxima': [max_sale if data_processor.amount_column else 0]
         }
         

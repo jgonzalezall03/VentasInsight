@@ -40,14 +40,20 @@ def main():
         if st.button("📊 Cargar archivo de ejemplo del proyecto"):
             try:
                 import os
-                if os.path.exists("attached_assets/ventas_limpias_1755883892344.xlsx"):
+                if os.path.exists("ventas_limpias.xlsx"):
+                    with st.spinner("Cargando archivo de ejemplo..."):
+                        st.session_state.data_processor = DataProcessor()
+                        st.session_state.df = st.session_state.data_processor.load_and_process_excel("ventas_limpias.xlsx")
+                    st.success("✅ Archivo de ejemplo cargado exitosamente!")
+                    st.rerun()
+                elif os.path.exists("attached_assets/ventas_limpias_1755883892344.xlsx"):
                     with st.spinner("Cargando archivo de ejemplo..."):
                         st.session_state.data_processor = DataProcessor()
                         st.session_state.df = st.session_state.data_processor.load_and_process_excel("attached_assets/ventas_limpias_1755883892344.xlsx")
                     st.success("✅ Archivo de ejemplo cargado exitosamente!")
                     st.rerun()
                 else:
-                    st.error("No se encontró el archivo de ejemplo")
+                    st.error("No se encontró el archivo de ejemplo en ninguna ubicación")
             except Exception as e:
                 st.error(f"Error al cargar el archivo de ejemplo: {str(e)}")
         
@@ -64,7 +70,6 @@ def main():
                 # Show data info
                 if st.session_state.df is not None:
                     st.subheader("🔍 Información del Dataset")
-                    st.write(f"**Columnas detectadas:** {len(st.session_state.df.columns)}")
                     
                     # Show detected columns
                     detected_cols = st.session_state.data_processor.get_detected_columns()
@@ -74,9 +79,40 @@ def main():
                             if col_name:
                                 st.write(f"- {col_type.title()}: `{col_name}`")
                     
+                    # Show data quality report
+                    with st.expander("📊 Reporte de Calidad de Datos"):
+                        quality_report = st.session_state.data_processor.get_data_quality_report(st.session_state.df)
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric("Total Registros", quality_report['total_rows'])
+                            st.metric("Total Columnas", quality_report['total_columns'])
+                            st.metric("Duplicados", quality_report['duplicates'])
+                        
+                        with col2:
+                            if quality_report['date_range']:
+                                st.write(f"**Rango de Fechas:** {quality_report['date_range']}")
+                            if quality_report['amount_stats']:
+                                st.write("**Estadísticas de Ventas:**")
+                                stats = quality_report['amount_stats']
+                                st.write(f"- Promedio: {stats['mean']} UF")
+                                st.write(f"- Mediana: {stats['median']} UF")
+                                st.write(f"- Mínimo: {stats['min']} UF")
+                                st.write(f"- Máximo: {stats['max']} UF")
+                    
             except Exception as e:
                 st.error(f"❌ Error al procesar el archivo: {str(e)}")
-                st.info("💡 Asegúrate de que el archivo contenga columnas de ventas típicas como: fecha, vendedor, monto, producto, etc.")
+                st.info("💡 Formatos soportados: Excel (.xlsx, .xls) con columnas como fecha, vendedor, monto, etc.")
+                
+                # Show expected format
+                with st.expander("📋 Formato Esperado del Archivo"):
+                    st.write("**Columnas recomendadas:**")
+                    st.write("- **Fecha**: Mes de gestión, Fecha, Periodo")
+                    st.write("- **Monto**: Venta UF, Monto, Valor")
+                    st.write("- **Vendedor**: EEVV, Ejecutivo, Vendedor")
+                    st.write("- **Cliente**: Cliente, RUT Cliente, Empresa")
+                    st.write("- **Producto**: Producto, Servicio, Tipo")
+                    st.write("- **Región**: Región, Zona, Ciudad")
     
     # Main content area
     if st.session_state.df is not None and st.session_state.data_processor is not None:

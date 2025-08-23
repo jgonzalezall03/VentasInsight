@@ -54,10 +54,20 @@ def render_team_analysis(df, data_processor):
     
     if data_processor.salesperson_column and data_processor.amount_column:
         # Team performance metrics
-        team_metrics = filtered_df.groupby(data_processor.salesperson_column)[data_processor.amount_column].agg([
-            'sum', 'count', 'mean', 'std'
-        ]).reset_index()
-        team_metrics.columns = ['vendedor', 'ventas_totales', 'contratos', 'venta_promedio', 'desviacion']
+        if data_processor.contract_column:
+            # Use contract column from Excel
+            team_metrics = filtered_df.groupby(data_processor.salesperson_column).agg({
+                data_processor.amount_column: ['sum', 'mean', 'std'],
+                data_processor.contract_column: 'sum'
+            }).reset_index()
+            team_metrics.columns = ['vendedor', 'ventas_totales', 'venta_promedio', 'desviacion', 'contratos']
+        else:
+            # Fallback to counting transactions
+            team_metrics = filtered_df.groupby(data_processor.salesperson_column)[data_processor.amount_column].agg([
+                'sum', 'count', 'mean', 'std'
+            ]).reset_index()
+            team_metrics.columns = ['vendedor', 'ventas_totales', 'contratos', 'venta_promedio', 'desviacion']
+        
         team_metrics = team_metrics.sort_values('ventas_totales', ascending=False)
         
         # Top performers
@@ -109,11 +119,17 @@ def render_team_analysis(df, data_processor):
             st.plotly_chart(fig_dist, use_container_width=True, key="team_sales_distribution")
         
         with col2:
-            # Transaction count by salesperson
-            transaction_counts = filtered_df[data_processor.salesperson_column].value_counts()
+            # Contract distribution by salesperson
+            if data_processor.contract_column:
+                # Use contract column from Excel
+                contract_counts = filtered_df.groupby(data_processor.salesperson_column)[data_processor.contract_column].sum()
+            else:
+                # Fallback to transaction count
+                contract_counts = filtered_df[data_processor.salesperson_column].value_counts()
+            
             fig_trans = px.pie(
-                values=transaction_counts.values,
-                names=transaction_counts.index,
+                values=contract_counts.values,
+                names=contract_counts.index,
                 title="Distribución de Contratos"
             )
             fig_trans.update_layout(template='plotly_white')
@@ -204,6 +220,43 @@ def render_team_analysis(df, data_processor):
                 f"{avg_salespeople_per_customer:.2f}",
                 delta=None
             )
+    
+    # Advanced Analytics
+    st.subheader("📈 Análisis Avanzado")
+    
+    if data_processor.salesperson_column and data_processor.amount_column:
+        from utils.visualizations import create_performance_matrix, create_temporal_heatmap, create_efficiency_analysis
+        
+        tab1, tab2, tab3 = st.tabs(["Matriz de Rendimiento", "Heatmap Temporal", "Análisis de Eficiencia"])
+        
+        with tab1:
+            st.markdown("""
+            **Matriz de Rendimiento**: Clasifica vendedores en 4 cuadrantes:
+            - 🌟 **Estrellas**: Altas ventas + Muchos contratos
+            - 🐄 **Vacas Lecheras**: Altas ventas + Pocos contratos
+            - ❓ **Interrogantes**: Bajas ventas + Muchos contratos  
+            - 🐕 **Perros**: Bajas ventas + Pocos contratos
+            """)
+            fig_matrix = create_performance_matrix(filtered_df, data_processor)
+            st.plotly_chart(fig_matrix, use_container_width=True, key="performance_matrix")
+        
+        with tab2:
+            st.markdown("""
+            **Heatmap Temporal**: Muestra la intensidad de ventas por vendedor y mes.
+            - 🔴 **Rojo**: Ventas altas
+            - 🔵 **Azul**: Ventas bajas
+            """)
+            fig_heatmap = create_temporal_heatmap(filtered_df, data_processor)
+            st.plotly_chart(fig_heatmap, use_container_width=True, key="temporal_heatmap")
+        
+        with tab3:
+            st.markdown("""
+            **Análisis de Eficiencia**: Mide la venta promedio por contrato.
+            - Tamaño de burbuja = Eficiencia
+            - Color = Nivel de eficiencia
+            """)
+            fig_efficiency = create_efficiency_analysis(filtered_df, data_processor)
+            st.plotly_chart(fig_efficiency, use_container_width=True, key="efficiency_analysis")
     
     # Export functionality
     st.subheader("📥 Exportar Datos")

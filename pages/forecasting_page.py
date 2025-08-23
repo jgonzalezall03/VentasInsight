@@ -22,7 +22,7 @@ def render_forecasting_page(df, data_processor):
     forecaster = SalesForecaster(data_processor)
     
     # Forecasting parameters
-    st.sidebar.subheader("⚙️ Parámetros de Forecasting")
+    st.subheader("⚙️ Parámetros de Forecasting")
     
     # Date range for historical data
     min_date = df[data_processor.date_column].min()
@@ -35,52 +35,64 @@ def render_forecasting_page(df, data_processor):
         min_date_val = (datetime.now() - timedelta(days=365)).date()
         max_date_val = datetime.now().date()
     
-    start_date = st.sidebar.date_input(
-        "Fecha Inicio Histórica",
-        value=min_date_val,
-        min_value=min_date_val,
-        max_value=max_date_val
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input(
+            "Fecha Inicio Histórica",
+            value=min_date_val,
+            min_value=min_date_val,
+            max_value=max_date_val
+        )
     
-    end_date = st.sidebar.date_input(
-        "Fecha Fin Histórica",
-        value=max_date_val,
-        min_value=min_date_val,
-        max_value=max_date_val
-    )
+    with col2:
+        end_date = st.date_input(
+            "Fecha Fin Histórica",
+            value=max_date_val,
+            min_value=min_date_val,
+            max_value=max_date_val
+        )
     
     # Forecast parameters
-    forecast_periods = st.sidebar.slider(
-        "Períodos a Pronosticar",
-        min_value=1,
-        max_value=12,
-        value=6,
-        help="Número de meses a pronosticar"
-    )
+    col1, col2, col3 = st.columns(3)
     
-    aggregation_level = st.sidebar.selectbox(
-        "Nivel de Agregación",
-        ["monthly", "weekly"],
-        index=0,
-        help="Nivel temporal para el análisis"
-    )
+    with col1:
+        forecast_periods = st.slider(
+            "Períodos a Pronosticar",
+            min_value=1,
+            max_value=12,
+            value=6,
+            help="Número de meses a pronosticar"
+        )
     
-    forecast_method = st.sidebar.selectbox(
-        "Método de Forecasting",
-        ["Linear Regression", "Moving Average", "Seasonal Decomposition"],
-        index=0
-    )
+    with col2:
+        aggregation_level = st.selectbox(
+            "Nivel de Agregación",
+            ["monthly", "weekly"],
+            index=0,
+            help="Nivel temporal para el análisis"
+        )
+    
+    with col3:
+        forecast_method = st.selectbox(
+            "Método de Forecasting",
+            ["Linear Regression", "Moving Average", "Seasonal Decomposition"],
+            index=0
+        )
     
     # Salesperson filter for individual forecasting
-    individual_forecast = st.sidebar.checkbox("Forecasting Individual por Vendedor")
+    col1, col2 = st.columns(2)
     
-    selected_salesperson = None
-    if individual_forecast and data_processor.salesperson_column:
-        salespeople = sorted(df[data_processor.salesperson_column].unique())
-        selected_salesperson = st.sidebar.selectbox(
-            "Seleccionar Vendedor",
-            salespeople
-        )
+    with col1:
+        individual_forecast = st.checkbox("Forecasting Individual por Vendedor")
+    
+    with col2:
+        selected_salesperson = None
+        if individual_forecast and data_processor.salesperson_column:
+            salespeople = sorted(df[data_processor.salesperson_column].unique())
+            selected_salesperson = st.selectbox(
+                "Seleccionar Vendedor",
+                salespeople
+            )
     
     # Filter data
     filtered_df = data_processor.filter_by_date_range(df, start_date, end_date)
@@ -103,6 +115,8 @@ def render_forecasting_page(df, data_processor):
         if len(df_agg) < 3:
             st.error("Se necesitan al menos 3 períodos de datos históricos para realizar el forecasting")
             return
+        
+        st.divider()
         
         # Display historical data overview
         st.subheader("📊 Datos Históricos")
@@ -163,7 +177,7 @@ def render_forecasting_page(df, data_processor):
         # Forecast table
         st.subheader("📋 Tabla de Pronósticos")
         
-        display_forecast = forecast_df.copy()
+        display_forecast = forecast_df[[data_processor.date_column, 'forecast', 'lower_bound', 'upper_bound']].copy()
         display_forecast[data_processor.date_column] = display_forecast[data_processor.date_column].dt.strftime('%Y-%m')
         display_forecast['forecast'] = display_forecast['forecast'].apply(lambda x: f"{x:,.2f} UF")
         display_forecast['lower_bound'] = display_forecast['lower_bound'].apply(lambda x: f"{x:,.2f} UF")
@@ -282,7 +296,7 @@ def render_forecasting_page(df, data_processor):
         fig_scenarios.update_layout(
             title="📊 Comparación de Escenarios",
             xaxis_title="Fecha",
-            yaxis_title="Ventas (UF),"
+            yaxis_title="Ventas (UF)",
             template='plotly_white'
         )
         
