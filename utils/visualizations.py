@@ -452,3 +452,186 @@ def create_efficiency_analysis(df, data_processor):
     )
     
     return fig
+
+def create_enhanced_kpi_cards(df, data_processor):
+    """Create enhanced KPI cards with more metrics"""
+    if df.empty or not data_processor.amount_column:
+        st.warning("No hay datos suficientes para mostrar KPIs")
+        return
+    
+    # Calculate KPIs
+    total_sales = df[data_processor.amount_column].sum()
+    avg_sale = df[data_processor.amount_column].mean()
+    
+    # Count contracts
+    if data_processor.contract_column:
+        num_contracts = df[data_processor.contract_column].sum()
+    elif data_processor.customer_column and data_processor.date_column:
+        df_contracts = df.copy()
+        df_contracts['month_year'] = df_contracts[data_processor.date_column].dt.to_period('M')
+        num_contracts = df_contracts.groupby([data_processor.customer_column, 'month_year']).size().count()
+    else:
+        num_contracts = len(df)
+    
+    # Additional metrics
+    num_salespeople = df[data_processor.salesperson_column].nunique() if data_processor.salesperson_column else 0
+    avg_per_salesperson = total_sales / num_salespeople if num_salespeople > 0 else 0
+    conversion_rate = (num_contracts / len(df)) * 100 if len(df) > 0 else 0
+    
+    # Growth calculation
+    growth_rate = 0
+    if data_processor.date_column and len(df) > 1:
+        try:
+            df_sorted = df.sort_values(data_processor.date_column)
+            current_month = df_sorted[data_processor.date_column].dt.to_period('M').iloc[-1]
+            prev_month = current_month - 1
+            
+            current_sales = df_sorted[df_sorted[data_processor.date_column].dt.to_period('M') == current_month][data_processor.amount_column].sum()
+            prev_sales = df_sorted[df_sorted[data_processor.date_column].dt.to_period('M') == prev_month][data_processor.amount_column].sum()
+            
+            if prev_sales > 0:
+                growth_rate = ((current_sales - prev_sales) / prev_sales) * 100
+        except:
+            growth_rate = 0
+    
+    # Create enhanced KPI layout
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    
+    with col1:
+        st.metric(
+            label="💰 Ventas Totales",
+            value=f"{total_sales:,.2f} UF".replace(',', 'X').replace('.', ',').replace('X', '.'),
+            delta=f"{growth_rate:+.1f}%" if growth_rate != 0 else None
+        )
+    
+    with col2:
+        st.metric(
+            label="📊 Venta Promedio",
+            value=f"{avg_sale:,.2f} UF".replace(',', 'X').replace('.', ',').replace('X', '.'),
+            delta=None
+        )
+    
+    with col3:
+        st.metric(
+            label="🧾 Contratos",
+            value=f"{num_contracts:,}",
+            delta=None
+        )
+    
+    with col4:
+        st.metric(
+            label="👥 Vendedores",
+            value=f"{num_salespeople}",
+            delta=None
+        )
+    
+    with col5:
+        st.metric(
+            label="💼 Promedio/Vendedor",
+            value=f"{avg_per_salesperson:,.0f} UF".replace(',', '.'),
+            delta=None
+        )
+    
+    with col6:
+        st.metric(
+            label="📈 Tasa Conversión",
+            value=f"{conversion_rate:.1f}%",
+            delta=None
+        )
+
+def create_top_performers_ranking(df, data_processor):
+    """Create top performers ranking"""
+    st.subheader("🏆 Ranking de Vendedores")
+    
+    if df.empty or not data_processor.salesperson_column or not data_processor.amount_column:
+        st.warning("No hay datos suficientes para el ranking")
+        return
+    
+    # Calculate performance metrics
+    if data_processor.contract_column:
+        performance = df.groupby(data_processor.salesperson_column).agg({
+            data_processor.amount_column: ['sum', 'mean'],
+            data_processor.contract_column: 'sum'
+        }).round(2)
+        performance.columns = ['Ventas_Total', 'Venta_Promedio', 'Contratos']
+    else:
+        performance = df.groupby(data_processor.salesperson_column).agg({
+            data_processor.amount_column: ['sum', 'mean', 'count']
+        }).round(2)
+        performance.columns = ['Ventas_Total', 'Venta_Promedio', 'Contratos']
+    
+    performance['Eficiencia'] = (performance['Ventas_Total'] / performance['Contratos']).round(2)
+    performance = performance.sort_values('Ventas_Total', ascending=False).reset_index()
+    performance['Posición'] = range(1, len(performance) + 1)
+    
+    # Display top 10
+    top_10 = performance.head(10)
+    
+    # Format for display
+    display_df = top_10[['Posición', data_processor.salesperson_column, 'Ventas_Total', 'Contratos', 'Eficiencia']].copy()
+    display_df['Ventas_Total'] = display_df['Ventas_Total'].apply(lambda x: f"{x:,.0f} UF".replace(',', '.'))
+    display_df['Eficiencia'] = display_df['Eficiencia'].apply(lambda x: f"{x:,.1f} UF".replace(',', '.'))
+    
+    st.dataframe(
+        display_df,
+        column_config={
+            "Posición": st.column_config.NumberColumn("🏅 Pos", width="small"),
+            data_processor.salesperson_column: st.column_config.TextColumn("👤 Vendedor"),
+            "Ventas_Total": st.column_config.TextColumn("💰 Ventas"),
+            "Contratos": st.column_config.NumberColumn("🧾 Contratos", width="small"),
+            "Eficiencia": st.column_config.TextColumn("⚡ Eficiencia")
+        },
+        hide_index=True,
+        use_container_width=True
+    )
+
+def create_performance_insights(df, data_processor):
+    """Create performance insights and alerts"""
+    st.subheader("🔍 Insights de Rendimiento")
+    
+    if df.empty or not data_processor.salesperson_column or not data_processor.amount_column:
+        st.warning("No hay datos suficientes para insights")
+        return
+    
+    # Calculate insights
+    total_sales = df[data_processor.amount_column].sum()
+    avg_sales = df[data_processor.amount_column].mean()
+    
+    # Top performer
+    top_performer = df.groupby(data_processor.salesperson_column)[data_processor.amount_column].sum().idxmax()
+    top_sales = df.groupby(data_processor.salesperson_column)[data_processor.amount_column].sum().max()
+    
+    # Underperformers (bottom 20%)
+    performance_by_person = df.groupby(data_processor.salesperson_column)[data_processor.amount_column].sum()
+    threshold = performance_by_person.quantile(0.2)
+    underperformers = performance_by_person[performance_by_person <= threshold]
+    
+    # Best month (if date available)
+    best_month = "N/A"
+    if data_processor.date_column:
+        try:
+            monthly_sales = df.groupby(df[data_processor.date_column].dt.to_period('M'))[data_processor.amount_column].sum()
+            best_month = monthly_sales.idxmax().strftime('%B %Y')
+        except:
+            pass
+    
+    # Display insights
+    st.success(f"🌟 **Mejor Vendedor**: {top_performer} con {top_sales:,.0f} UF".replace(',', '.'))
+    
+    if best_month != "N/A":
+        st.info(f"📅 **Mejor Mes**: {best_month}")
+    
+    if len(underperformers) > 0:
+        st.warning(f"⚠️ **Atención**: {len(underperformers)} vendedores bajo el percentil 20")
+    
+    # Performance distribution
+    st.write("**Distribución de Ventas:**")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("🎯 Mediana", f"{performance_by_person.median():,.0f} UF".replace(',', '.'))
+    with col2:
+        st.metric("📊 Desv. Estándar", f"{performance_by_person.std():,.0f} UF".replace(',', '.'))
+    with col3:
+        coeff_var = (performance_by_person.std() / performance_by_person.mean()) * 100
+        st.metric("📈 Coef. Variación", f"{coeff_var:.1f}%")

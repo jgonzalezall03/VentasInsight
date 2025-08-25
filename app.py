@@ -5,7 +5,10 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import numpy as np
 from utils.data_processor import DataProcessor
-from utils.visualizations import create_kpi_cards, create_team_performance_chart, create_sales_trend_chart
+from utils.visualizations import (create_kpi_cards, create_enhanced_kpi_cards, create_team_performance_chart, 
+                                 create_sales_trend_chart, create_product_performance_chart,
+                                 create_monthly_comparison_chart, create_top_performers_ranking,
+                                 create_performance_insights)
 import os
 
 # Configure page
@@ -117,11 +120,12 @@ def main():
     # Main content area
     if st.session_state.df is not None and st.session_state.data_processor is not None:
         # Navigation tabs
-        tab1, tab2, tab3, tab4 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "🏠 Dashboard General", 
             "👥 Análisis por Equipo", 
             "👤 Análisis Individual", 
-            "📈 Forecasting"
+            "📈 Forecasting",
+            "🤖 Predicciones IA"
         ])
         
         with tab1:
@@ -135,6 +139,9 @@ def main():
         
         with tab4:
             show_forecasting()
+        
+        with tab5:
+            show_ml_predictions()
     
     else:
         # Welcome screen
@@ -159,6 +166,8 @@ def main():
             ✅ **Análisis Individual**: Métricas detalladas por ejecutivo
             
             ✅ **Forecasting**: Predicciones de ventas para los próximos meses
+            
+            ✅ **Predicciones IA**: Machine Learning para predicciones avanzadas
             
             ✅ **Filtros Interactivos**: Por fecha, vendedor, producto y más
             """)
@@ -196,10 +205,10 @@ def show_general_dashboard():
     # Filter data
     filtered_df = processor.filter_by_date_range(df, start_date, end_date)
     
-    # KPI Cards
-    create_kpi_cards(filtered_df, processor)
+    # Enhanced KPI Cards
+    create_enhanced_kpi_cards(filtered_df, processor)
     
-    # Charts
+    # Charts section
     col1, col2 = st.columns(2)
     
     with col1:
@@ -211,6 +220,27 @@ def show_general_dashboard():
         if processor.salesperson_column and processor.amount_column:
             fig_team = create_team_performance_chart(filtered_df, processor)
             st.plotly_chart(fig_team, use_container_width=True, key="main_team_chart")
+    
+    # Rankings and additional metrics
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        create_top_performers_ranking(filtered_df, processor)
+    
+    with col2:
+        create_performance_insights(filtered_df, processor)
+    
+    # Additional charts row
+    if processor.product_column:
+        col1, col2 = st.columns(2)
+        with col1:
+            fig_product = create_product_performance_chart(filtered_df, processor)
+            st.plotly_chart(fig_product, use_container_width=True, key="product_chart")
+        
+        with col2:
+            if processor.date_column:
+                fig_monthly = create_monthly_comparison_chart(filtered_df, processor)
+                st.plotly_chart(fig_monthly, use_container_width=True, key="monthly_chart")
     
     # Recent data table
     st.subheader("📋 Datos Recientes")
@@ -230,6 +260,11 @@ def show_forecasting():
     """Display forecasting page"""
     from pages.forecasting_page import render_forecasting_page
     render_forecasting_page(st.session_state.df, st.session_state.data_processor)
+
+def show_ml_predictions():
+    """Display ML predictions page"""
+    from pages.ml_predictions_page import render_ml_predictions_page
+    render_ml_predictions_page(st.session_state.df, st.session_state.data_processor)
 
 if __name__ == "__main__":
     main()
